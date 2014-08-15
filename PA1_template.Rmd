@@ -2,19 +2,72 @@
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+setwd("/home/lukasz/Documents/Coursera/5. Reproductible Research/Assignment1/github/RepData_PeerAssessment1")
+unzip("activity.zip")
+activity <- read.table("activity.csv", header = T, sep = ",", quote = '"' )
+activity <- transform(activity, date = as.Date(date, "%Y-%m-%d"))
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+aggStepsPerDay <- aggregate(x = activity$steps, by = list(activity$date), FUN = sum)
+names(aggStepsPerDay) <- c("day", "no_of_steps")
+library(ggplot2)
+p <- ggplot(data = aggStepsPerDay, aes(day, no_of_steps)) 
+p + geom_bar(stat = "identity")
 
+mean(aggStepsPerDay$no_of_steps, na.rm = T)
+median(aggStepsPerDay$no_of_steps, na.rm = T)
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+aggStepsOverIntv <- aggregate(x = activity$steps, by = list(activity$interval), FUN = function(x) mean(x, na.rm = T) )
+names(aggStepsOverIntv) <- c("interval", "avg_steps")
+plot(x = aggStepsOverIntv$interval, y = aggStepsOverIntv$avg_steps, type = "l", xlab = "Interval", ylab = "Average number of steps")
+
+sel <- max(aggStepsOverIntv$avg_steps) == aggStepsOverIntv$avg_steps
+aggStepsOverIntv[sel, ]
+```
 
 
 ## Imputing missing values
 
+```{r}
+nrow(activity[is.na(activity$steps) | is.na(activity$date) | is.na(activity$interval), ])
 
+# only "steps" have NA's
+nrow(activity[is.na(activity$date), ])
+nrow(activity[is.na(activity$interval), ])
+activity$mean.steps.over.intv <- ave(activity$steps, activity$interval, FUN=function(x) mean(x, na.rm = T))
+
+activity.clean <- data.frame(steps = ifelse(is.na(activity$steps), activity$mean.steps.over.intv, activity$steps), date = activity$date, interval = activity$interval)
+
+# 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps
+# taken per day. Do these values differ from the estimates from the first part of the assignment? 
+# What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+aggStepsPerDay.clean <- aggregate(x = activity.clean$steps, by = list(activity.clean$date), FUN = sum)
+names(aggStepsPerDay.clean) <- c("day", "no_of_steps")
+
+library(ggplot2)
+p <- ggplot(data = aggStepsPerDay.clean, aes(day, no_of_steps)) 
+p + geom_bar(stat = "identity")
+
+mean(aggStepsPerDay.clean$no_of_steps, na.rm = T)
+median(aggStepsPerDay.clean$no_of_steps, na.rm = T)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+activity.clean <- transform(activity.clean, wd.wkd = ifelse(format(date, "%w") %in% c("5", "6"), "weekend", "weekday") )
+
+aggStepsPerDayType.clean <- aggregate(x = activity.clean$steps, by = list(activity.clean$interval, activity.clean$wd.wkd), FUN = mean)
+names(aggStepsPerDayType.clean) <- c("interval", "day.type", "steps.mean")
+
+qplot(interval, steps.mean, data=aggStepsPerDayType.clean, facets=day.type~., geom = "line")
+```
