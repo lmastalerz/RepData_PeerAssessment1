@@ -26,11 +26,11 @@ library(ggplot2)
 p <- ggplot(data = aggStepsPerDay, aes(day, no_of_steps)) 
 p + geom_bar(stat = "identity")
 
-mn <- mean(aggStepsPerDay$no_of_steps, na.rm = T)
-md <- median(aggStepsPerDay$no_of_steps, na.rm = T)
+mn <- format(mean(aggStepsPerDay$no_of_steps, na.rm = T), digits=8)
+md <- format(median(aggStepsPerDay$no_of_steps, na.rm = T), digits=8)
 ```
 
-Mean number of steps taken per day is `r mn` and median is `r mn`.
+Mean number of steps taken per day is `r mn` and the median is `r md`.
 
 ## What is the average daily activity pattern?
 
@@ -43,9 +43,11 @@ names(aggStepsOverIntv) <- c("interval", "avg_steps")
 plot(x = aggStepsOverIntv$interval, y = aggStepsOverIntv$avg_steps, type = "l", xlab = "Interval", ylab = "Average number of steps")
 
 sel <- max(aggStepsOverIntv$avg_steps) == aggStepsOverIntv$avg_steps
-interval.with.highest.avg.steps <- aggStepsOverIntv[sel, ]
+interval.with.highest.avg.steps <- aggStepsOverIntv[sel, c("interval")]
 interval.with.highest.avg.steps
 ```
+
+Interval `r interval.with.highest.avg.steps` has the highest average number of steps.
 
 ## Imputing missing values
 
@@ -56,13 +58,16 @@ interval.with.highest.avg.steps
 # 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 # 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-nrow(activity[is.na(activity$steps) | is.na(activity$date) | is.na(activity$interval), ])
+missing.rows <- nrow(activity[is.na(activity$steps) | is.na(activity$date) | is.na(activity$interval), ])
+```
 
-# only "steps" have NA's
-nrow(activity[is.na(activity$date), ])
-nrow(activity[is.na(activity$interval), ])
+Total number of of rows with missing values is `r missing.rows`. 
+
+```{r}
+# calculate average number of steps per interval
 activity$mean.steps.over.intv <- ave(activity$steps, activity$interval, FUN=function(x) mean(x, na.rm = T))
 
+# replace NA's with average number of steps per interval
 activity.clean <- data.frame(steps = ifelse(is.na(activity$steps), activity$mean.steps.over.intv, activity$steps), date = activity$date, interval = activity$interval)
 
 aggStepsPerDay.clean <- aggregate(x = activity.clean$steps, by = list(activity.clean$date), FUN = sum)
@@ -72,9 +77,13 @@ library(ggplot2)
 p <- ggplot(data = aggStepsPerDay.clean, aes(day, no_of_steps)) 
 p + geom_bar(stat = "identity")
 
-mean(aggStepsPerDay.clean$no_of_steps, na.rm = T)
-median(aggStepsPerDay.clean$no_of_steps, na.rm = T)
+mn.clean <- format(mean(aggStepsPerDay.clean$no_of_steps, na.rm = T), digits=8)
+md.clean <- format(median(aggStepsPerDay.clean$no_of_steps, na.rm = T), digits=8)
 ```
+
+In the clean dataset nean number of steps taken per day is `r mn.clean` and. the median is `r md.clean` which is different from the dataset with NA's. 
+Total daily number of steps calculated on clean dataset is higher that the value calculated for dataset with missing values.
+
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
